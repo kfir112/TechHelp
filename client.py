@@ -76,7 +76,6 @@ class OmniClient:
         self.disconnect()
 
     def process_command(self, cmd):
-        # 1. פקודות מערכת וצ'אט - תמיד עוברות (כדי שהצ'אט יעבוד גם בהשהיה)
         if cmd.startswith("CHAT:"):
             msg = cmd[5:].strip()
             clean_msg = msg.strip("\u202B\u202C\u200F")
@@ -89,11 +88,9 @@ class OmniClient:
             import os
             os._exit(0) 
 
-        # 2. חסימה הרמטית! אם הלקוח השהה את השליטה - מתעלמים מכל שאר הפקודות
         if getattr(self, 'control_paused', False):
             return
 
-        # 3. פקודות השתלטות (עכבר ומקלדת) - מתבצעות רק אם לא בהשהיה
         if cmd.startswith("MOVE:"):
             _, coords = cmd.split(":")
             nx, ny = map(float, coords.split(","))
@@ -164,12 +161,10 @@ class OmniClient:
             return
             
         import time
-        # מנגנון Cooldown למניעת לחיצות כפולות בטעות (Bouncing)
         current_time = time.time()
         if not hasattr(self, 'last_toggle_time'):
             self.last_toggle_time = 0
             
-        # אם לא עברה לפחות שנייה מאז הלחיצה הקודמת, התעלם
         if current_time - self.last_toggle_time < 1.0:
             return
             
@@ -177,15 +172,13 @@ class OmniClient:
 
         try:
             if not getattr(self, 'control_paused', False):
-                # הפסקת שליטה
-                self.control_paused = True # עוצר מיד בצד הלקוח את כל התנועות!
+                self.control_paused = True
                 self.cmd_sock.sendall(b"CMD:REVOKE_CONTROL\n")
                 print("[Client] שליטה הופסקה על ידי הלקוח.")
                 if self.gui_chat_callback:
                     self.gui_chat_callback("מערכת: עצרת את שליטת הטכנאי. לחץ F12 שוב כדי לאפשר לו לחזור.")
             else:
-                # חידוש שליטה
-                self.control_paused = False # פותח חזרה את התנועות
+                self.control_paused = False
                 self.cmd_sock.sendall(b"CMD:HELP_REQ\n")
                 print("[Client] נשלחה בקשת חידוש שליטה.")
                 if self.gui_chat_callback:
