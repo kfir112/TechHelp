@@ -28,9 +28,6 @@ except FileNotFoundError:
     sys.exit(1)
 
 
-# =====================================================================
-# --- מחלקת ניהול מסד הנתונים (SQLite) - קבוע, מאובטח ולא נמחק ---
-# =====================================================================
 class OmniDatabase:
     def __init__(self, db_name="omnidesk.db"):
         self.db_name = db_name
@@ -43,7 +40,6 @@ class OmniDatabase:
         conn = self.get_connection()
         cursor = conn.cursor()
         
-        # 1. טבלת טכנאים - עמודת salt ייחודית
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS Technicians (
                 technician_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -53,7 +49,6 @@ class OmniDatabase:
             )
         ''')
         
-        # 2. טבלת לקוחות
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS Clients (
                 client_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -63,7 +58,6 @@ class OmniDatabase:
             )
         ''')
         
-        # 3. טבלת הודעות צ'אט
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS ChatMessages (
                 message_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -75,7 +69,6 @@ class OmniDatabase:
             )
         ''')
         
-        # יצירת טכנאי ברירת מחדל (admin / 1234) אך ורק אם הטבלה ריקה לחלוטין!
         cursor.execute("SELECT COUNT(*) FROM Technicians")
         if cursor.fetchone()[0] == 0:
             random_salt = os.urandom(16).hex()
@@ -89,7 +82,6 @@ class OmniDatabase:
         conn.close()
 
     def register_technician(self, username, password):
-        """ הרשמה (Signup) של טכנאי חדש. מחזיר True אם הצליח, False אם השם תפוס. """
         conn = self.get_connection()
         cursor = conn.cursor()
         try:
@@ -107,7 +99,6 @@ class OmniDatabase:
             conn.close()
 
     def validate_technician(self, username, password):
-        """ בודק התחברות (Login) """
         conn = self.get_connection()
         cursor = conn.cursor()
         
@@ -126,7 +117,6 @@ class OmniDatabase:
         return None
 
     def log_client_connection(self, ip_address, status):
-        """ מכניס לקוח חדש או מעדכן סטטוס של לקוח קיים ומחזיר את ה-ID שלו """
         conn = self.get_connection()
         cursor = conn.cursor()
         try:
@@ -161,7 +151,6 @@ class OmniDatabase:
         conn.commit()
         conn.close()
 
-# אובייקט מסד נתונים גלובלי
 db = OmniDatabase()
 
 
@@ -180,7 +169,6 @@ class ClientHandler:
         self.gui_callback = gui_callback 
         self.alert_callback = alert_callback
 
-        # שמירה במסד הנתונים בעת חיבור ראשוני
         self.db_id = db.log_client_connection(self.ip, "AI_TALKING")
 
         self.ai_client = None
@@ -249,7 +237,6 @@ class ClientHandler:
                         if self.alert_callback:
                             self.alert_callback(alert_msg)
                         
-                        # רענון ה-GUI כדי שהכפתור ידלק חזרה
                         if hasattr(self, 'refresh_gui_callback') and self.refresh_gui_callback:
                             self.refresh_gui_callback()
                         continue
@@ -262,7 +249,6 @@ class ClientHandler:
                         if self.alert_callback:
                             self.alert_callback(alert_msg)
                             
-                        # מכריח את ה-GUI להפסיק את השליטה ולשנות כפתור
                         if hasattr(self, 'revoke_gui_callback') and self.revoke_gui_callback:
                             self.revoke_gui_callback(self.ip)
                         continue
@@ -316,7 +302,6 @@ class ClientHandler:
                     
         except Exception as e:
             print(f"[Client {self.ip}] Gemini AI Error/Quota: {e}")
-            # --- טיפול חכם בחריגת Quota (כדי שהמערכת לא תקפא) ---
             error_msg = "מערכת: עוזר ה-AI אינו זמין כרגע. מעביר אותך אוטומטית לטכנאי אנושי..."
             self.chat_history.append(error_msg)
             if self.gui_callback:
@@ -330,7 +315,6 @@ class ClientHandler:
                 self.alert_callback(f"🚨 ה-AI של לקוח {self.ip} נחסם! הועבר לטכנאי.")
             if hasattr(self, 'refresh_gui_callback') and self.refresh_gui_callback:
                 self.refresh_gui_callback()
-            # ----------------------------------------------------
 
     def generate_incident_summary(self):
         if not self.ai_client: return "אין נתוני AI זמינים."
@@ -891,7 +875,6 @@ if __name__ == "__main__":
     if "GEMINI_API_KEY" not in os.environ and not os.path.exists("api_key.txt"):
         print("[Warning] No API key method found. Please ensure 'api_key.txt' exists.")
 
-    # פתיחת חלון אימות ריק ומקצועי (Login / Signup) לטכנאי
     login_root = tk.Tk()
     login_root.title("OmniDesk - Auth Hub")
     login_root.geometry("340x260")
@@ -911,7 +894,6 @@ if __name__ == "__main__":
     is_authenticated = [False] 
 
     def try_login():
-        """ פונקציית התחברות למשתמש קיים """
         username = user_ent.get().strip()
         password = pass_ent.get().strip()
         
